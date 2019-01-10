@@ -1,0 +1,211 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD iBatis Mapper 3.0 //EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="com.genghis.leo.demotion.dao.StuDao">
+
+    <!--留级信息相关-->
+    <select id="getUserListPage" resultType="StuWrong">
+        SELECT *FROM stu_wrong a WHERE degrade=1 OR SUBSTRING(a.sno, 3, 2) != SUBSTRING(a.cno, 1, 2) order by degrade desc,
+        grade1 desc, grade2 desc,grade3 desc,grade4 desc,grade5 desc,grade6 desc
+    </select>
+    <select id="searchStuWrongListPage" resultType="StuWrong">
+        SELECT * FROM  stu_wrong WHERE  #{attribute}= #{value}
+    </select>
+    <select id="getOneStuWrong" parameterType="String" resultType="StuWrong">
+        SELECT * FROM stu_wrong
+        <if test="_parameter != null">
+            <where>
+                sno = #{_parameter}
+            </where>
+        </if>
+    </select>
+    <update id="updateOneStuWrong" parameterType="StuWrong">
+        UPDATE stu_wrong
+        SET cno=#{cno},
+        grade1=#{grade1},
+        grade2=#{grade2},
+        grade3=#{grade3},
+        grade4=#{grade4},
+        grade5=#{grade5},
+        grade6=#{grade6},
+        validGrade1=#{validGrade1},
+        validGrade2=#{validGrade2},
+        validGrade3=#{validGrade3},
+        validGrade4=#{validGrade4},
+        validGrade5=#{validGrade5},
+        validGrade6=#{validGrade6},
+        tolscore=#{tolscore},
+        degrade=#{degrade},
+        peohandle=#{peohandle},
+        wasWrong=#{wasWrong},
+        wrongLevel=#{wrongLevel},
+        roll=#{roll}
+        WHERE sno=#{sno}
+    </update>
+    <insert id="setStuWrong" parameterType="StuWrong">
+        INSERT INTO stu_wrong
+        VALUES(#{sno},#{name},#{cno},#{grade6},
+        #{grade5},#{grade4},#{grade3},#{grade2},
+        #{grade1},#{validGrade6},#{validGrade5},
+        #{validGrade4},#{validGrade3},#{validGrade2},
+        #{validGrade1},#{tolscore},#{degrade},#{peohandle},
+        #{wasWrong},#{wrongLevel},#{roll})
+    </insert>
+    <select id="getAllStuWrong" resultType="StuWrong">
+        SELECT * FROM stu_wrong
+    </select>
+    <delete id="deleteStuWrong" parameterType="String">
+        DELETE FROM stu_wrong WHERE cno LIKE '${_parameter}%' OR cno LIKE '3${_parameter}%' OR cno LIKE '2${_parameter}%'
+    </delete>
+
+    <!--学生信息相关-->
+    <insert id="insertStuInfo" parameterType="com.genghis.leo.demotion.model.StuInfo">
+        INSERT INTO stu_info(sno, name, college, major, cno, rollStatus)
+        VALUES(#{sno}, #{name}, #{college}, #{major}, #{cno}, #{rollStatus})
+    </insert>
+
+    <select id="getStuInfoList" parameterType="String" resultType="com.genghis.leo.demotion.model.StuInfo">
+        SELECT * FROM stu_info
+        <if test="th != null">
+            WHERE cno LIKE '${th}%' OR cno LIKE '3${th}%' OR cno LIKE '2${th}%'
+        </if>
+    </select>
+    <delete id="deleteStuInfo" parameterType="String">
+        delete from stu_info where cno like '${_parameter}%' or cno like '3${_parameter}%' or cno like '2${_parameter}%'
+    </delete>
+
+    <!--学生成绩相关-->
+    <insert id="insertStuGrade" parameterType="com.genghis.leo.demotion.model.StuGrade">
+       INSERT INTO stu_grade(sno, name, semester, cno, courseNo, courseName, usualGrade, experGrade, totalGrade, gradeId, coursePro, courseAttr, period, credit, gpa, courseDepart, typeMan, examPro, reSemester, remark, status)
+       VALUES(#{sno}, #{name}, #{semester}, #{cno}, #{courseNo}, #{courseName}, #{usualGrade}, #{experGrade}, #{totalGrade}, #{gradeId},#{coursePro}, #{courseAttr}, #{period}, #{credit}, #{gpa}, #{courseDepart}, #{typeMan}, #{examPro}, #{reSemester}, #{remark}, #{status})
+    </insert>
+    <select id="getStuGradeWithPlan" parameterType="map" resultType="com.genghis.leo.demotion.model.StuGrade">
+        SELECT
+            *
+        FROM
+            stu_grade a, (SELECT courseName, MAX(totalGrade) maxGrade FROM stu_grade WHERE sno=#{sno} AND semester LIKE '${fullTh}%' GROUP BY courseName) c
+        WHERE sno = #{sno}
+            AND semester LIKE '${fullTh}%'
+            AND courseAttr = '必修'
+            AND a.courseName IN (SELECT courseName FROM stu_plan b WHERE b.cno = a.cno)
+            AND a.totalGrade = c.maxGrade
+            AND c.courseName=a.courseName
+    </select>
+    <select id="getStuGradeWithOutPlan" parameterType="map" resultType="com.genghis.leo.demotion.model.StuGrade">
+        SELECT
+            *
+        FROM
+            stu_grade a, (SELECT courseName, MAX(totalGrade) maxGrade FROM stu_grade WHERE sno=#{sno} AND semester LIKE '${fullTh}%' GROUP BY courseName) c
+        WHERE sno = #{sno}
+            AND semester LIKE '${fullTh}%'
+            AND courseAttr = '必修'
+            AND a.courseName NOT IN (SELECT courseName FROM stu_plan b WHERE b.cno = a.cno)
+            AND a.totalGrade = c.maxGrade
+            AND c.courseName=a.courseName
+    </select>
+    <select id="getStuAllGradeWithPlan" parameterType="String" resultType="com.genghis.leo.demotion.model.StuGrade">
+        SELECT
+            sno, name, semester, cno, courseNo, courseName, usualGrade, experGrade, max(totalGrade+0) totalGrade, gradeId, coursePro, courseAttr, period, credit, gpa, courseDepart, typeMan, examPro, reSemester, remark, status
+        FROM
+            stu_grade
+        WHERE sno = #{_parameter} AND courseAttr = '必修' GROUP BY courseName
+    </select>
+
+    <select id="getStuGradeWithCName" resultType="com.genghis.leo.demotion.model.StuGrade">
+        SELECT
+            b.sno, b.name, a.semester, a.cno, a.courseNo, a.courseName, b.usualGrade,
+            b.experGrade, b.totalGrade, b.gradeId, a.courseAttr, b.period, b.credit,
+            b.gpa, a.courseDepart, b.typeMan, b.examPro, b.reSemester, b.remark, b.status
+        FROM
+            (SELECT * FROM stu_plan WHERE cno=#{cno} AND courseName LIKE '${cutCName}%' AND courseName != #{norCName}) a
+        LEFT JOIN
+            (SELECT * FROM stu_grade WHERE sno=#{sno}) b ON a.courseName=b.courseName
+        <!--select * from stu_grade-->
+        <!--<where>-->
+            <!--sno=#{sno} and courseName like '${cutCName}%' and courseName != #{norCName}-->
+        <!--</where>-->
+    </select>
+    <select id="getStuGrade" resultType="com.genghis.leo.demotion.model.StuGrade">
+        select * from stu_grade
+        <where>
+            sno=#{sno} and semester like '${fullTh}%' and courseName = #{courseName}
+        </where>
+    </select>
+    <delete id="deleteStuGrade" parameterType="String">
+        delete from stu_grade where semester like '${_parameter}%'
+    </delete>
+
+    <!--培养计划相关-->
+    <insert id="insertStuPlan" parameterType="com.genghis.leo.demotion.model.StuPlan">
+        INSERT INTO stu_plan(semester, college, th, major, courseNo, courseName, credit, courseAttr, courseDepart, cno, platform)
+        VALUES(#{semester}, #{college}, #{th}, #{major}, #{courseNo}, #{courseName}, #{credit}, #{courseAttr}, #{courseDepart}, #{cno}, #{platform})
+    </insert>
+    <delete id="deleteStuPlan" parameterType="String">
+        delete from stu_plan where semester like '${_parameter}%'
+    </delete>
+
+    <!--冲突课程相关-->
+    <insert id="insertConflictCourse" parameterType="com.genghis.leo.demotion.model.StuGrade">
+        INSERT INTO conflict_course(sno, name, semester, cno, courseNo, courseName, usualGrade, experGrade, totalGrade, gradeId, coursePro, courseAttr, period, credit, gpa, courseDepart, typeMan, examPro, reSemester, remark, status)
+        VALUES(#{sno}, #{name}, #{semester}, #{cno}, #{courseNo}, #{courseName}, #{usualGrade}, #{experGrade}, #{totalGrade}, #{gradeId},#{coursePro}, #{courseAttr}, #{period}, #{credit}, #{gpa}, #{courseDepart}, #{typeMan}, #{examPro}, #{reSemester}, #{remark}, #{status})
+    </insert>
+    <select id="getStuConflictCourse" resultType="com.genghis.leo.demotion.model.StuGrade">
+        <if test="courseName != null">
+            SELECT * FROM conflict_course a,
+                (SELECT courseName, MAX(totalGrade) maxGrade FROM conflict_course WHERE sno=#{sno} AND courseName=#{courseName} GROUP BY courseName) b
+            WHERE sno=#{sno} AND a.courseName=#{courseName} AND a.totalGrade=b.maxGrade
+        </if>
+        <if test="courseName == null">
+            SELECT * FROM conflict_course a,
+                (SELECT courseName, MAX(totalGrade) maxGrade FROM conflict_course WHERE sno=#{sno} GROUP BY courseName) b
+            WHERE sno=#{sno} AND a.totalGrade=b.maxGrade AND a.courseName=b.courseName
+        </if>
+    </select>
+    <delete id="deleteConflictCourse">
+        DELETE FROM conflict_course
+        <where>
+            <if test="sno != null">
+                sno=#{sno}
+            </if>
+            <if test="courseName != null">
+                AND courseName=#{courseName}
+            </if>
+        </where>
+    </delete>
+
+
+    <select id="getReplaceCourse" resultType="com.genghis.leo.demotion.model.StuGrade">
+        select * from stu_grade where sno=#{sno} and courseName=#{courseName} and totalGrade=#{totalGrade}
+    </select>
+
+    <insert id="setFailCourse" parameterType="map">
+        INSERT INTO fail_course
+        VALUES(#{stuGrade.sno}, #{stuGrade.name}, #{stuGrade.semester}, #{stuGrade.cno}, #{stuGrade.courseNo}, #{stuGrade.courseName}, #{stuGrade.usualGrade}, #{stuGrade.experGrade}, #{stuGrade.totalGrade}, #{stuGrade.gradeId},#{stuGrade.coursePro}, #{stuGrade.courseAttr}, #{stuGrade.period}, #{stuGrade.credit}, #{stuGrade.gpa}, #{stuGrade.courseDepart}, #{stuGrade.typeMan}, #{stuGrade.examPro}, #{stuGrade.reSemester}, #{stuGrade.remark}, #{stuGrade.status}, #{isReplace}, #{replaceCourseName}, #{replaceGrade})
+    </insert>
+    <delete id="deleteFailCourse">
+        delete from fail_course where sno=#{sno} and semester like '${semester}%'
+    </delete>
+    <select id="getFailCourseWOReplace" resultType="com.genghis.leo.demotion.model.StuGrade">
+        select sno, name, semester, cno, courseNo, courseName, usualGrade, experGrade, totalGrade, gradeId, coursePro, courseAttr, period, credit, gpa, courseDepart, typeMan, examPro, reSemester, remark, status
+        from fail_course where isReplace=0
+    </select>
+    <select id="getFailCourse" parameterType="map" resultType="com.genghis.leo.demotion.model.StuGrade">
+        select sno, name, semester, cno, courseNo, courseName, usualGrade, experGrade, totalGrade, gradeId, coursePro, courseAttr, period, credit, gpa, courseDepart, typeMan, examPro, reSemester, remark, status
+        from fail_course where sno=#{sno} and courseName=#{courseName}
+    </select>
+    <update id="updateFailCourse" parameterType="map">
+        UPDATE fail_course
+        SET
+            isReplace=#{isReplace},
+            replaceCourseName=#{replaceCourseName},
+            replaceGrade=#{replaceGrade}
+        WHERE sno=#{sno} AND courseName=#{courseName}
+    </update>
+
+    <delete id="deleteFailCourseByCNO" parameterType="String">
+        DELETE FROM fail_course WHERE cno LIKE '${_parameter}%' OR cno LIKE '3${_parameter}%' OR cno LIKE '2${_parameter}%'
+    </delete>
+    <delete id="deleteConflictCourseByCNO" parameterType="String">
+        DELETE FROM conflict_course WHERE cno LIKE '${_parameter}%' OR cno LIKE '3${_parameter}%' OR cno LIKE '2${_parameter}%'
+    </delete>
+
+</mapper>
